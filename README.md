@@ -1,6 +1,16 @@
 mathematica-comsol
 ==================
 
-A link between from Wolfram Mathematica to COMSOL Multiphysics
+A link between from Wolfram Mathematica to COMSOL Multiphysics.
 
-Project is updated based on the need. Please contact me if you are intrested to see some features or would like to collaborate.
+At present it imports table data from COMSOL export.
+
+## Usage
+
+A (guide)[http://mathematica.stackexchange.com/questions/669/how-to-install-packages] on installing packages.
+
+`COMSOLImport[file path]` imports the .txt file with table results exported by COMSOL.
+    
+`COMSOLImport[file, "Headers"]` gives the hearers of the table.
+    
+`COMSOLImport[file, "Info"]` gives the additional information stored in the file.
