@@ -7,7 +7,7 @@ At present it imports table data from COMSOL export.
 
 ## Usage
 
-A (guide)[http://mathematica.stackexchange.com/questions/669/how-to-install-packages] on installing packages.
+A [guide](http://mathematica.stackexchange.com/questions/669/how-to-install-packages) on installing packages.
 
 `COMSOLImport[file path]` imports the .txt file with table results exported by COMSOL.
     
