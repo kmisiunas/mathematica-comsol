@@ -2,18 +2,59 @@
 
 (* Package for interaction with COMSOL software and it's outputs
  * Author Karolis Misiunas (k.misiunas@gmail.com)
+ *
+ * ## Versions
+ *
+ * 2016-06-19  --  Moved to Mathematica's Import[] extension
+ * 2016-09-11  --  support for reading parameter file and removed old ways
  *)
 
 BeginPackage["COMSOL`"]
 
-COMSOLImport::usage = 
-	"COMSOLImport[file path] imports the .txt file with table results exported by COMSOL.
-	 COMSOLImport[file, \"Headers\"] gives the hearers of the table.
-	 COMSOLImport[file, \"Info\"] gives the additional information stored in the file."
+COMSOL::usage =
+	"Import[file_ , \"COMSOL\"] imports data from the comsol expor txt file.
+	 Import[file, {\"COMSOL\",\"Info\"}] gives the additional information stored in the file.
+	 Import[file, {\"COMSOL\",\"Headers\"}] gives the hearers of the table.
+	 Import[file, {\"COMSOL\",\"Parameters\"}] special import function for importing paraters file.";
 
-
+importParametersFile::usage = ""
 
 Begin["`Private`"]
+
+(* Extending Import[] *)
+
+
+ImportExport`RegisterImport[
+  "COMSOL",
+  {
+    "Headers" :> importComsolHeaders ,
+    "Info" :> importComsolInfo,
+		"Parameters" :> importParametersFile,
+    importComsolTable (*default importer *)
+  }
+];
+
+importComsolTable[ filename_String, options___ ] :=
+    Import[filename, "Table"][[ CountCommentLines[filename] ;; ]]
+
+importComsolHeaders[ filename_String, options___ ] := {
+  "Headers" ->
+      ImportString[ StringDrop[
+        Import[filename, {"Text", "Lines", CountCommentLines[filename] - 1}],
+        1], "Table" , "FieldSeparators" -> "  "]
+};
+
+importComsolInfo[ filename_String, options___ ] := {
+  "Info" -> StringDrop[# , 1] &/@ Import[file, {"Text", "Lines", Range[CountCommentLines[filename] -2]}]
+};
+
+
+importParametersFile[ filename_String, options___ ] := {
+  "Parameters" ->
+     <| (#1 -> interpretQuantity[#2]) & @@@ Import[filename, "Table"][[ All, {1, 2}]] |>
+};
+
+
 
 (*Secret helper methods*)
 
@@ -28,30 +69,24 @@ CountCommentLines[file_String] := Module[{st, line, i},
 	];
 	Close[st];
 	i
-]
+];
 
+numericValueQ[ st_] := NumberQ@ToExpression[st] || NumberQ@extractValue[st];
 
-(* Implementations *)
+getIfNotEmpty[list_] := If[Length[list] == 1 , First[list], list];
 
-COMSOLImport[file_String?FileExistsQ] := COMSOLImport[file, "Table"] ;
+extractUnits[st_] := getIfNotEmpty@StringCases[st, "[" ~~ __ ~~ "]"];
 
-(* import file, but skip unnecessary information *)
-COMSOLImport[file_String?FileExistsQ, "Table"] := Import[file, "Table"][[ CountCommentLines[file] ;; ]] ;
+extractValue[st_] := getIfNotEmpty@ToExpression@StringCases[st, num__ ~~ "[" ~~ __ ~~ "]" -> num];
 
-(* import only headers *)
-COMSOLImport[file_String?FileExistsQ, "Headers"] := 
-	ImportString[ StringDrop[ 
-		Import[file, {"Text", "Lines", CountCommentLines[file] -1}],
-	1], "Table" , "FieldSeparators"-> "  "];
+interpretQuantity[st_] := Which[
+  Not@numericValueQ[ st], Return[st],
+  NumberQ@ToExpression[st], ToExpression[st],
+  True, Quantity[ extractValue[st], extractUnits[st]]
+];
 
-(* get files information *)
-COMSOLImport[file_String?FileExistsQ, "Info"|"Information"] := 
-	StringDrop[# , 1] &/@ Import[file, {"Text", "Lines", Range[CountCommentLines[file] -2]}] ;
 
 
 End[ ]
 
 EndPackage[ ]
-
-
-
