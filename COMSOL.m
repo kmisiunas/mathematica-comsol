@@ -7,6 +7,7 @@
  *
  * 2016-06-19  --  Moved to Mathematica's Import[] extension
  * 2016-09-11  --  support for reading parameter file and removed old ways
+ * 2018-06-07  --  updated parameter import function to interpret um
  *)
 
 BeginPackage["COMSOL`"]
@@ -75,7 +76,10 @@ numericValueQ[ st_] := NumberQ@ToExpression[st] || NumberQ@extractValue[st];
 
 getIfNotEmpty[list_] := If[Length[list] == 1 , First[list], list];
 
-extractUnits[st_] := getIfNotEmpty@StringCases[st, "[" ~~ __ ~~ "]"];
+unitTraslate[unit_] := StringTake[  StringReplace[unit, {"um" -> "\[Mu]m"}] , {2, -2}];
+
+extractUnits[st_] := unitTraslate@getIfNotEmpty@StringCases[st, "[" ~~ __ ~~ "]"];
+
 
 extractValue[st_] := getIfNotEmpty@ToExpression@StringCases[st, num__ ~~ "[" ~~ __ ~~ "]" -> num];
 
@@ -90,3 +94,6 @@ interpretQuantity[st_] := Which[
 End[ ]
 
 EndPackage[ ]
+
+
+
